@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35303.130
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SemanticAnalysis", "SemanticAnalysis\SemanticAnalysis.csproj", "{0E9A6020-A268-4177-A615-389DA3F9EE85}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SemanticAnalysisTests", "SemanticAnalysisTests\SemanticAnalysisTests.csproj", "{FE458252-16FE-4979-9783-74F10B6CABF7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0E9A6020-A268-4177-A615-389DA3F9EE85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E9A6020-A268-4177-A615-389DA3F9EE85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E9A6020-A268-4177-A615-389DA3F9EE85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E9A6020-A268-4177-A615-389DA3F9EE85}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE458252-16FE-4979-9783-74F10B6CABF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE458252-16FE-4979-9783-74F10B6CABF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE458252-16FE-4979-9783-74F10B6CABF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE458252-16FE-4979-9783-74F10B6CABF7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2C59E7E2-84AD-4CEF-8542-57A01AFC847C}
+	EndGlobalSection
+EndGlobal
