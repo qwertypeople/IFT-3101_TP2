@@ -20,5 +20,32 @@ namespace SemanticAnalysis.Parsing
 
         public string Name { get; } = name;
         public SymbolType Type { get; } = type;
+
+        public bool IsNonterminal()
+        {
+            return Type == SymbolType.Nonterminal; 
+        }
+
+        public bool IsTerminal()
+        {
+            return Type == SymbolType.Terminal;
+        }
+
+        public bool IsSpecial() 
+        { 
+            return Type == SymbolType.Special;
+        }
+
+        public bool IsEpsilon()      
+        {
+            return IsSpecial() && Name == EPSILON.Name;
+        }
+
+        public bool IsEnd()
+        {
+            return IsSpecial() && Name == END.Name;
+        }
+
+
     }
 }
