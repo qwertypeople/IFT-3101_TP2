@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ProductionExecption;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,12 +15,12 @@ namespace SemanticAnalysis.Parsing
         public Production(Symbol head, List<Symbol> body)
         {
             /* --- À COMPLÉTER (gestion des erreurs seulement) --- */
-            if (!head.IsNonterminal())
+            if (head.IsTerminal())
             {
                 throw new WhenHeadIsTerminalException(head.Name);
             }
 
-            if (!head.IsSpecial())
+            if (head.IsSpecial())
             {
                 throw new WhenHeadIsSpecialException(head.Name);
             }

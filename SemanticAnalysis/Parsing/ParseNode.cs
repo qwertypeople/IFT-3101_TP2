@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ParseNodeExecption;
 using SemanticAnalysis.Attributes;
 
 namespace SemanticAnalysis.Parsing
@@ -86,5 +87,5 @@ namespace SemanticAnalysis.Parsing
             throw new WhenNodeCannotBeFoundException();
         }
     }
-    }
+    
 }
