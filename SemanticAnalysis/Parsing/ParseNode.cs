@@ -29,7 +29,7 @@ namespace SemanticAnalysis.Parsing
                 throw new WhenSymbolIsNonterminalAndIsNotHeadOfProductionException();
             }
 
-            if (symbol.IsNonterminal() && production != null)
+            if (symbol.IsTerminal() && production != null)
             {
                 throw new WhenSymbolIsTerminalAndProductionIsNotNullException();
             }

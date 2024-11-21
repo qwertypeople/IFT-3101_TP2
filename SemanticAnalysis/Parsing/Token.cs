@@ -15,12 +15,12 @@ namespace SemanticAnalysis.Parsing
         public Token(Symbol symbol, string? value)
         {
             /* --- À COMPLÉTER (gestion des erreurs seulement) --- */
-            if (symbol.Type == SymbolType.Nonterminal)
+            if (symbol.IsNonterminal())
             {
                 throw new WhenSymbolIsNonterminalException(symbol.Name);                
             }
 
-            if (symbol.Type == SymbolType.Special && symbol.Name != Symbol.END.Name)
+            if (symbol.IsSpecial() && !symbol.IsEnd())
             {
                 throw new WhenSymbolIsSpecialOtherThanEndException(symbol.Name);
             }

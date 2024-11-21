@@ -46,6 +46,16 @@ namespace SemanticAnalysis.Parsing
             return IsSpecial() && Name == END.Name;
         }
 
+        public override bool Equals(object obj)
+        {
+            return obj is Symbol other && Name == other.Name;
+        }
+
+        public override int GetHashCode()
+        {
+            return Name.GetHashCode();
+        }
+
 
     }
 }
