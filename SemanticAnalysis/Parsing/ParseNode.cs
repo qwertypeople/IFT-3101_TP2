@@ -19,6 +19,11 @@ namespace SemanticAnalysis.Parsing
         public ParseNode(Symbol symbol, Production? production)
         {
             /* --- À COMPLÉTER (gestion des erreurs seulement) --- */
+            if (symbol.IsTerminal() && production != null)
+            {
+                throw new WhenSymbolIsTerminalAndProductionIsNotNullException();
+            }
+
             if (symbol.IsNonterminal() && production == null)
             {
                 throw new WhenSymbolIsNonterminalAndProductionIsNullException();
@@ -27,11 +32,6 @@ namespace SemanticAnalysis.Parsing
             if (production != null && symbol != production.Head)
             {
                 throw new WhenSymbolIsNonterminalAndIsNotHeadOfProductionException();
-            }
-
-            if (symbol.IsTerminal() && production != null)
-            {
-                throw new WhenSymbolIsTerminalAndProductionIsNotNullException();
             }
 
             if (symbol.IsEpsilon() && production != null)
@@ -44,9 +44,21 @@ namespace SemanticAnalysis.Parsing
                 throw new WhenSymbolIsSpecialOtherThanEpsilonException();
             }
 
-
             Symbol = symbol;
             Production = production;
+            Children = new List<ParseNode>();
+            // Si la production n'est pas nulle et que le symbole est un non-terminal,
+            // ajouter les enfants du corps de la production
+            if (Production != null && Symbol.IsNonterminal())
+            {
+                foreach (Symbol bodySymbol in Production.Body)
+                {
+                    // Créer un nœud pour chaque symbole du corps de la production
+                    // Vous pouvez adapter selon que vous avez des sous-productions spécifiques ou non
+                    ParseNode childNode = new ParseNode(bodySymbol, null); // Ici production est à null pour l'enfant
+                    Children.Add(childNode); // Ajouter le nœud enfant à la liste des enfants
+                }
+            }
         }
 
         public T? GetAttributeValue<T>(SemanticAttribute<T> attribute)
@@ -68,22 +80,38 @@ namespace SemanticAnalysis.Parsing
         public ParseNode GetBindedNode(IAttributeBinding binding)
         {
             /* --- À COMPLÉTER (logique et gestion des erreurs) --- */
-            if (this.Symbol == binding.Symbol)
+            if (binding == null)
             {
-                return this;
+                throw new ArgumentNullException(nameof(binding), "L'AttributeBinding ne peut pas être nul.");
             }
 
-            // Vérifier si l'un des enfants correspond au nom recherché
+            int occurrenceCount = 0;
+
+            // Vérifie si le noeud actuel correspond au symbole spécifié
+            if (this.Symbol == binding.Symbol)
+            {
+                if (binding.Subscript == 0) // Si c'est la première occurrence
+                {
+                    return this;
+                }
+                occurrenceCount++; // Compte cette occurrence
+            }
+
+            // Parcourir les enfants pour rechercher l'occurrence spécifiée
             foreach (ParseNode child in Children)
             {
-                if (child.Symbol.Name == binding.Symbol.Name)
+                if (child.Symbol == binding.Symbol)
                 {
-                    return child;
+                    // Vérifie si c'est l'occurrence recherchée
+                    if (occurrenceCount == binding.Subscript)
+                    {
+                        return child;
+                    }
+                    occurrenceCount++;
                 }
             }
 
             // Si le noeud n'est pas trouvé, lever une exception
-            //TODO ajouté le nom du symbole de binding
             throw new WhenNodeCannotBeFoundException();
         }
     }
