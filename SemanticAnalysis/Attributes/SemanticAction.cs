@@ -24,10 +24,10 @@ namespace SemanticAnalysis.Attributes
                 throw new WhenTargetIsInSourcesException();
             }
 
-
             Target = target;
             Sources = sources;
             _action = action;
+
         }
 
         public void Execute(ParseNode node)
@@ -66,8 +66,7 @@ namespace SemanticAnalysis.Attributes
                 if (!sourceExists)
                 {
                     throw new WhenNodeSymbolIsNonterminalAndSourceIsNotInNodeException(source.Symbol.Name, node.Symbol.Name);
-                }             
-              
+                }                      
             }
 
             if (node.Symbol.IsTerminal())

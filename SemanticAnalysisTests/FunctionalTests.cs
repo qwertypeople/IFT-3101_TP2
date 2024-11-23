@@ -35,6 +35,7 @@ namespace SemanticAnalysisTests
             Production production5 = new(B, [Symbol.EPSILON]);
             Production production6 = new(C, [c, C]);
             Production production7 = new(C, [a]);
+            //
 
             Dictionary<Production, HashSet<SemanticAction>> definition = new()
             {
