@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 using SemanticAnalysis.Attributes;
 using SemanticAnalysis.Parsing;
 using SyntaxDirectedTranslationSchemeException;
@@ -557,9 +558,24 @@ namespace SemanticAnalysis
             foreach (var production in productions)
             {
                 (Symbol, List<Symbol>) current = (production.Head, production.Body);
-                if (productionEquivalent.Contains(current))
+                foreach ((Symbol, List<Symbol>) p in productionEquivalent)
                 {
-                    throw new WhenProductionsAreEquivalentException(production.Head, production.Body);
+                    bool t1 = p.Item1 == current.Item1;
+                    bool t2 = true;
+                    for (int i = 0; i < current.Item2.Count; i++)
+                    {
+                        if (current.Item2[i].Name != p.Item2[i].Name || current.Item2[i].Type != p.Item2[i].Type)
+                        {
+                            t2 = false;
+                            break;
+                        }
+                    }
+                           
+
+                    if (t1 && t2)
+                    {
+                        throw new WhenProductionsAreEquivalentException(production.Head, production.Body);
+                    }
                 }
 
                 productionEquivalent.Add(current);
@@ -586,26 +602,26 @@ namespace SemanticAnalysis
         private bool IsLAttributed(SemanticAction action, Production production)
         {
             //TODO
-            // Pour chaque source d'attributs dans l'action
-            foreach (IAttributeBinding source in action.Sources)
-            {
-                // Vérification de l'attribut hérité (ne doit dépendre que des symboles à gauche ou du parent)
-                if (source.IsInherited)
-                {
-                    if (!IsValidInheritedDependency(source, production))
-                    {
-                        return false;
-                    }
-                }
-                // Vérification de l'attribut synthétisé (ne doit dépendre que des symboles à droite ou des enfants)
-                else if (source.IsSynthesized)
-                {
-                    if (!IsValidSynthesizedDependency(source, production))
-                    {
-                        return false;
-                    }
-                }
-            }
+            //// Pour chaque source d'attributs dans l'action
+            //foreach (IAttributeBinding source in action.Sources)
+            //{
+            //    // Vérification de l'attribut hérité (ne doit dépendre que des symboles à gauche ou du parent)
+            //    if (source.IsInherited)
+            //    {
+            //        if (!IsValidInheritedDependency(source, production))
+            //        {
+            //            return false;
+            //        }
+            //    }
+            //    // Vérification de l'attribut synthétisé (ne doit dépendre que des symboles à droite ou des enfants)
+            //    else if (source.IsSynthesized)
+            //    {
+            //        if (!IsValidSynthesizedDependency(source, production))
+            //        {
+            //            return false;
+            //        }
+            //    }
+            //}
             return true;
         }
 
