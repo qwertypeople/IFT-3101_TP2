@@ -67,11 +67,80 @@ namespace SemanticAnalysis
             CheckForTerminalDefinition(definition);
             CheckForEquivalentProductions(definition.Keys);
 
-            //ValidateLAttributedGrammar(definition);
+            ValidateLAttributedGrammar(definition);
 
             OrderRules(definition);
             ComputeFirstSets();
             ComputeFollowSets();
+        }
+
+
+
+        private void ValidateLAttributedGrammar(Dictionary<Production, HashSet<SemanticAction>> definition)
+        {
+            foreach (var rule in definition)
+            {
+                Production production = rule.Key;
+                HashSet<SemanticAction> actions = rule.Value;
+
+                Symbol head = production.Head;  // Tête de la production
+                List<Symbol> body = production.Body;  // Corps de la production
+
+                foreach (SemanticAction action in actions)
+                {
+                    Symbol targetSymbol = action.Target.Symbol;  // Symbole visé par l'action
+                    int targetIndex = body.IndexOf(targetSymbol);  // Index du symbole cible dans le corps de la production
+
+                    if (targetIndex == -1)
+                    {
+                        // Si le symbole cible n'est pas dans le corps, lever une exception
+                        throw new WhenDefinitionIsNotLAttributedException(production, action);
+                    }
+
+                    foreach (IAttributeBinding source in action.Sources)
+                    {
+                        Symbol sourceSymbol = source.Symbol;
+
+                        if (!ReferenceEquals(sourceSymbol, head)) // Si la source n'est pas la tête de la production
+                        {
+                            int sourceIndex = body.IndexOf(sourceSymbol);
+
+                            if (sourceIndex == -1)
+                            {
+                                // Si la source n'est pas dans le corps, lever une exception
+                                throw new WhenDefinitionIsNotLAttributedException(production, action);
+                            }
+
+                            if (sourceIndex >= targetIndex)
+                            {
+                                // Si la source est à droite du symbole cible, lever une exception
+                                throw new WhenDefinitionIsNotLAttributedException(production, action);
+                            }
+
+                            if (targetIndex == -1)
+                            {
+                                throw new WhenDefinitionIsNotLAttributedException(
+                                    production,
+                                    action);
+                            }
+
+                            if (sourceIndex == -1)
+                            {
+                                throw new WhenDefinitionIsNotLAttributedException(
+                                    production,
+                                    action);
+                            }
+
+                            if (sourceIndex >= targetIndex)
+                            {
+                                throw new WhenDefinitionIsNotLAttributedException(
+                                    production,
+                                    action);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
 
@@ -88,10 +157,16 @@ namespace SemanticAnalysis
             // Vérification des symboles dans la grammaire
             foreach (Symbol symbol in symbols)
             {
-                if (!Terminals.Contains(symbol) && !Nonterminals.Contains(symbol))
+                if (!Terminals.Contains(symbol) && !Nonterminals.Contains(symbol) && !symbol.IsSpecial())
                 {
                     throw new WhenInputSymbolIsNotInGrammarException(symbol.Name);
                 }
+            }
+
+            // Vérifier si Symbol.EPSILON est explicitement dans la liste
+            if (symbols.Contains(Symbol.EPSILON))
+            {
+                return new HashSet<Symbol> { Symbol.EPSILON };
             }
 
             // Parcours des symboles de la liste
@@ -433,94 +508,7 @@ namespace SemanticAnalysis
             } while (updated); // Repeat until no updates are made
         }
 
-        //private void ComputeFollowSets()
-        //{
-        //    // Initialize Follow sets
-        //    Follow = new Dictionary<Symbol, HashSet<Symbol>>();
-
-        //    foreach (Symbol nonterminal in Nonterminals)
-        //    {
-        //        Follow[nonterminal] = new HashSet<Symbol>();
-        //    }
-
-        //    // Add $ to Follow(StartSymbol)
-        //    Follow[StartSymbol].Add(Symbol.END);
-
-        //    bool updated;
-
-        //    do
-        //    {
-        //        updated = false;
-
-        //        foreach (Production production in Rules.Keys)
-        //        {
-        //            Symbol head = production.Head;
-        //            List<Symbol> body = production.Body;
-
-        //            // Traverse the body of the production
-        //            for (int i = 0; i < body.Count; i++)
-        //            {
-        //                Symbol symbol = body[i];
-
-        //                if (!symbol.IsTerminal())
-        //                {
-        //                    // Step 1: Add First(β) \ {ε} to Follow(symbol)
-        //                    for (int j = i + 1; j < body.Count; j++)
-        //                    {
-        //                        Symbol nextSymbol = body[j];
-
-        //                        foreach (Symbol terminal in First[nextSymbol])
-        //                        {
-        //                            if (terminal != Symbol.EPSILON && Follow[symbol].Add(terminal))
-        //                            {
-        //                                updated = true;
-        //                            }
-        //                        }
-
-        //                        // Stop if First[nextSymbol] does not contain ε
-        //                        if (!First[nextSymbol].Contains(Symbol.EPSILON))
-        //                        {
-        //                            break;
-        //                        }
-        //                    }
-
-        //                    // Step 2: If β or all following symbols produce ε, add Follow(head) to Follow(symbol)
-        //                    bool allFollowingProduceEpsilon = true;
-        //                    for (int j = i + 1; j < body.Count; j++)
-        //                    {
-        //                        Symbol nextSymbol = body[j];
-        //                        if (nextSymbol.IsTerminal() || !First[nextSymbol].Contains(Symbol.EPSILON))
-        //                        {
-        //                            allFollowingProduceEpsilon = false;
-        //                            break;
-        //                        }
-        //                    }
-
-        //                    if (i == body.Count - 1 || allFollowingProduceEpsilon)
-        //                    {
-        //                        foreach (Symbol terminal in Follow[head])
-        //                        {
-        //                            if (Follow[symbol].Add(terminal))
-        //                            {
-        //                                updated = true;
-        //                            }
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //        }
-        //    } while (updated); // Repeat until no updates are made
-        //}
-
-
-
-
-        /// <summary>
-        /// This method will check for the definition of the syntaxe.  
-        /// If a NonTerminal is undefiened, it raise an error
-        /// </summary>
-        /// <param name="definition"></param>
-        /// <exception cref="WhenNonterminalIsNotDefinedException"></exception>        
+      
         private void CheckForTerminalDefinition(Dictionary<Production, HashSet<SemanticAction>> definition)
         {
             List<Symbol> undefinedNonTerminals = new List<Symbol>();

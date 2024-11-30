@@ -130,80 +130,48 @@ namespace SemanticAnalysisTests
         }
 
         [Test]
-        public void Constructor_WhenDefinitionIsNotLAttributed_ShouldThrowException()                                
+        public void Constructor_WhenDefinitionIsNotLAttributed_ShouldThrowException()
         {
-            //var definition = new Dictionary<Production, HashSet<SemanticAction>>();
+            // Arrange: Création des symboles
+            Symbol symbol_B = new Symbol("B", SymbolType.Nonterminal);
+            Symbol symbol_C = new Symbol("C", SymbolType.Nonterminal);
+            Symbol symbol_a = new Symbol("a", SymbolType.Terminal);
 
-            //var head = new Symbol("A", SymbolType.Nonterminal);
-            //var body = new List<Symbol> {
-            //    new Symbol("B", SymbolType.Nonterminal),
-            //    new Symbol("C", SymbolType.Nonterminal),
-            //    new Symbol("d", SymbolType.Terminal)
-            //};
-            //var production = new Production(head, body);
+            // Tête de la production
+            Symbol startSymbol = new Symbol("S", SymbolType.Nonterminal);
 
-            //var inh = new SemanticAttribute<int>("d", AttributeType.Inherited);
-            //var binding1 = new AttributeBinding<int>(body[1], 0, inh);
-            //var binding2 = new AttributeBinding<int>(body[0], 0, inh);
+            // Corps de la production principale
+            var body1 = new List<Symbol> { symbol_B, symbol_C, symbol_a };
 
-            //var action = new SemanticAction(
-            //    target: binding1,
-            //    sources: new HashSet<IAttributeBinding> { binding2 },
-            //    action: _ => { }
-            //);
+            // Définition des productions
+            Production production1 = new Production(startSymbol, body1);
 
-            //definition[production] = new HashSet<SemanticAction> { action };
+            // Dictionnaire des règles
+            var definition = new Dictionary<Production, HashSet<SemanticAction>>();
 
-            //Assert.Throws<WhenDefinitionIsNotLAttributedException>(() =>
-            //{
-            //    new SyntaxDirectedTranslationScheme(head, definition);
-            //});
+            // Créer un attribut hérité pour B (cible) et une source sur C (après B)
+            var inh = new SemanticAttribute<int>("a", AttributeType.Inherited);
+            var binding1 = new AttributeBinding<int>(symbol_B, 0, inh); // Cible : B
+            var binding2 = new AttributeBinding<int>(symbol_C, 0, inh); // Source : C
 
-            Assert.Fail();
+            // Action sémantique non L-attribuée (source C après B)
+            var action = new SemanticAction(
+                target: binding1,
+                sources: new HashSet<IAttributeBinding> { binding2 },
+                action: _ => { } // Simule une action
+            );
+
+            // Associer l'action à la production principale
+            definition[production1] = new HashSet<SemanticAction> { action };
+
+            // Act & Assert: Vérification que l'exception est levée
+            Assert.Throws<WhenDefinitionIsNotLAttributedException>(() =>
+            {
+                // Initialisation de la grammaire qui vérifie les contraintes L-attribuées
+                new SyntaxDirectedTranslationScheme(startSymbol, definition);
+            });
         }
-        //// Arrange
-        //Symbol startSymbol = new Symbol("S", SymbolType.Nonterminal);
-
-        //// Create non-terminal A
-        //Symbol A = new Symbol("A", SymbolType.Nonterminal);
-        //Symbol B = new Symbol("B", SymbolType.Nonterminal);
-
-        //// Create terminal a
-        //Symbol a = new Symbol("a", SymbolType.Terminal);
-
-        //// Production1 S -> Aa
-        //Production production1 = new Production(startSymbol, new List<Symbol> { A, a });
-        //// Production2 A -> a
-        //Production production2 = new Production(A, new List<Symbol> { a });
-
-        //// Create the semantic action with incorrect L-attribution
-        //// Assuming SemanticAction requires target, sources and action. 
-        //// The action is not L-attributed because of incorrect source/target usage.
-
-        //SemanticAttribute<int> inh = new SemanticAttribute<int>("d", AttributeType.Inherited);
-        //AttributeBinding<int> binding1 = new AttributeBinding<int>(A, 0, inh); // Target is non-terminal A
-        //AttributeBinding<int> binding2 = new AttributeBinding<int>(B, 0, inh); // Target is non-terminal A
-        //HashSet<IAttributeBinding> sources1 = new HashSet<IAttributeBinding> { binding2 };
-        //HashSet<IAttributeBinding> sources2 = new HashSet<IAttributeBinding> { binding1 };
-
-        //// Creating semantic action with an invalid L-attribution (since a non-terminal target should not have an inherited attribute)            
-        //SemanticAction invalidAction1 = new SemanticAction(binding1, sources1, _ => { });
-        //SemanticAction invalidAction2 = new SemanticAction(binding2, sources2, _ => { });
-
-        //// Add the production and its semantic action to the grammar definition
-        //Dictionary<Production, HashSet<SemanticAction>> definition = new Dictionary<Production, HashSet<SemanticAction>>
-        //{
-        //    { production1, new HashSet<SemanticAction> { invalidAction1 } },
-        //    { production2, new HashSet<SemanticAction> { invalidAction2 } }
-        //};
-
-        //// Act & Assert: Ensure that an exception is thrown when the scheme is created
-        //Assert.Throws<WhenDefinitionIsNotLAttributedException>(() =>
-        //{
-        //    // Creating the scheme should trigger the exception
-        //    SyntaxDirectedTranslationScheme scheme = new SyntaxDirectedTranslationScheme(startSymbol, definition);
-        //});
-
+ 
         [Test]
         public void FirstOfBody_WhenInputIsEmpty_ShouldThrowException()
         {
