@@ -132,6 +132,35 @@ namespace SemanticAnalysisTests
         [Test]
         public void Constructor_WhenDefinitionIsNotLAttributed_ShouldThrowException()                                
         {
+            //var definition = new Dictionary<Production, HashSet<SemanticAction>>();
+
+            //var head = new Symbol("A", SymbolType.Nonterminal);
+            //var body = new List<Symbol> {
+            //    new Symbol("B", SymbolType.Nonterminal),
+            //    new Symbol("C", SymbolType.Nonterminal),
+            //    new Symbol("d", SymbolType.Terminal)
+            //};
+            //var production = new Production(head, body);
+
+            //var inh = new SemanticAttribute<int>("d", AttributeType.Inherited);
+            //var binding1 = new AttributeBinding<int>(body[1], 0, inh);
+            //var binding2 = new AttributeBinding<int>(body[0], 0, inh);
+
+            //var action = new SemanticAction(
+            //    target: binding1,
+            //    sources: new HashSet<IAttributeBinding> { binding2 },
+            //    action: _ => { }
+            //);
+
+            //definition[production] = new HashSet<SemanticAction> { action };
+
+            //Assert.Throws<WhenDefinitionIsNotLAttributedException>(() =>
+            //{
+            //    new SyntaxDirectedTranslationScheme(head, definition);
+            //});
+
+            Assert.Fail();
+        }
         //// Arrange
         //Symbol startSymbol = new Symbol("S", SymbolType.Nonterminal);
 
@@ -174,26 +203,56 @@ namespace SemanticAnalysisTests
         //    // Creating the scheme should trigger the exception
         //    SyntaxDirectedTranslationScheme scheme = new SyntaxDirectedTranslationScheme(startSymbol, definition);
         //});
-        Assert.Fail();
-        }
 
         [Test]
         public void FirstOfBody_WhenInputIsEmpty_ShouldThrowException()
         {
-            Assert.Fail();
+            // Arrange
+            Symbol startSymbol = new Symbol("S", SymbolType.Nonterminal);
+            Production production1 = new Production(startSymbol, new List<Symbol> { new Symbol("a", SymbolType.Terminal) });
+
+            Dictionary<Production, HashSet<SemanticAction>> definition = new Dictionary<Production, HashSet<SemanticAction>>();
+            definition.Add(production1, new HashSet<SemanticAction>());
+
+            SyntaxDirectedTranslationScheme scheme = new SyntaxDirectedTranslationScheme(startSymbol, definition);
+
+            // Act & Assert
+            Assert.Throws<WhenInputIsEmptyException>(() =>
+            {
+                scheme.FirstOfBody(new List<Symbol>()); // Liste vide
+            });
         }
 
         [Test]
         public void FirstOfBody_WhenInputSymbolIsNotInGrammar_ShouldThrowException()
         {
-            Assert.Fail();
+            // Arrange
+            Symbol startSymbol = new Symbol("S", SymbolType.Nonterminal);
+            Production production1 = new Production(startSymbol, new List<Symbol> { new Symbol("a", SymbolType.Terminal) });
+            Dictionary<Production, HashSet<SemanticAction>> definition = new Dictionary<Production, HashSet<SemanticAction>>();
+            definition.Add(production1, new HashSet<SemanticAction>());
+            SyntaxDirectedTranslationScheme scheme = new SyntaxDirectedTranslationScheme(startSymbol, definition);
+
+            // Ajouter quelques symboles valides dans la grammaire
+            scheme.Terminals.Add(new Symbol("a", SymbolType.Terminal));
+            scheme.Nonterminals.Add(new Symbol("A", SymbolType.Nonterminal));
+
+            // Créer une liste avec un symbole invalide (non présent dans la grammaire)
+            var invalidSymbol = new Symbol("X", SymbolType.Nonterminal);
+            var symbols = new List<Symbol> { invalidSymbol };
+
+            // Act & Assert
+            Assert.Throws<WhenInputSymbolIsNotInGrammarException>(() =>
+            {
+                scheme.FirstOfBody(symbols); // Liste contenant un symbole invalide
+            });
         }
 
-        //Test ajouté
-        [Test]
-        public void SetSymbols_WhenSymbolIsNullInProduction_ShouldThrowException()
-        {
-            Assert.Fail();
-        }
+        ////Test ajouté
+        //[Test]
+        //public void SetSymbols_WhenSymbolIsNullInProduction_ShouldThrowException()
+        //{
+        //    Assert.Fail();
+        //}
     }
 }

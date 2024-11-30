@@ -62,11 +62,13 @@ namespace SemanticAnalysis
             if (Terminals.Count == 0)
             {
                 throw new WhenNoTerminalInProductionsException();
-            }
+            }           
 
             CheckForTerminalDefinition(definition);
             CheckForEquivalentProductions(definition.Keys);
-            ValidateLAttributedGrammar(definition);
+
+            //ValidateLAttributedGrammar(definition);
+
             OrderRules(definition);
             ComputeFirstSets();
             ComputeFollowSets();
@@ -564,9 +566,16 @@ namespace SemanticAnalysis
                     bool t2 = true;
                     for (int i = 0; i < current.Item2.Count; i++)
                     {
-                        if (current.Item2[i].Name != p.Item2[i].Name || current.Item2[i].Type != p.Item2[i].Type)
+                        for (int j = 0; j < p.Item2.Count; j++)
                         {
-                            t2 = false;
+                            if (current.Item2[i].Name != p.Item2[j].Name || current.Item2[i].Type != p.Item2[j].Type)
+                            {
+                                t2 = false;
+                                break;
+                            }
+                        }
+                        if (!t2)
+                        {
                             break;
                         }
                     }
@@ -581,49 +590,48 @@ namespace SemanticAnalysis
                 productionEquivalent.Add(current);
             }
         }
-                       
-        private void ValidateLAttributedGrammar(Dictionary<Production, HashSet<SemanticAction>> definition)
-        {
-            foreach (KeyValuePair<Production, HashSet<SemanticAction>> kvp in definition)
-            {
-                Production production = kvp.Key;
-                HashSet<SemanticAction> actions = kvp.Value;
 
-                foreach (SemanticAction action in actions)
-                {
-                    if (!IsLAttributed(action, production))
-                    {
-                        throw new WhenDefinitionIsNotLAttributedException(production, action);
-                    }
-                }
-            }
-        }
+        //private void ValidateLAttributedGrammar(Dictionary<Production, HashSet<SemanticAction>> definition)
 
-        private bool IsLAttributed(SemanticAction action, Production production)
-        {
-            //TODO
-            //// Pour chaque source d'attributs dans l'action
-            //foreach (IAttributeBinding source in action.Sources)
-            //{
-            //    // Vérification de l'attribut hérité (ne doit dépendre que des symboles à gauche ou du parent)
-            //    if (source.IsInherited)
-            //    {
-            //        if (!IsValidInheritedDependency(source, production))
-            //        {
-            //            return false;
-            //        }
-            //    }
-            //    // Vérification de l'attribut synthétisé (ne doit dépendre que des symboles à droite ou des enfants)
-            //    else if (source.IsSynthesized)
-            //    {
-            //        if (!IsValidSynthesizedDependency(source, production))
-            //        {
-            //            return false;
-            //        }
-            //    }
-            //}
-            return true;
-        }
+        //private void ValidateLAttributedGrammar(Dictionary<Production, HashSet<SemanticAction>> definition)
+        //{
+        //    foreach (var entry in definition)
+        //    {
+        //        Production production = entry.Key;
+        //        HashSet<SemanticAction> actions = entry.Value;
+
+        //        // Récupérer la tête de la production et le corps
+        //        Symbol head = production.Head;
+        //        List<Symbol> body = production.Body;
+
+        //        foreach (SemanticAction action in actions)
+        //        {
+                    
+        //            // Identifier le symbole visé par l'action
+        //            Symbol targetSymbol = action.Target.Symbol;
+
+        //            // Récupérer les dépendances nécessaires pour calculer l'attribut
+        //            HashSet<IAttributeBinding> dependencies = action.Sources;
+
+        //            // Vérifier que chaque dépendance respecte les contraintes
+        //            foreach (IAttributeBinding dependency in dependencies)
+        //            {
+        //                if (!ReferenceEquals(dependency, head)) // La tête est toujours une source valide
+        //                {
+        //                    // Si la dépendance est dans le corps, elle doit apparaître avant le symbole cible
+        //                    int dependencyIndex = body.IndexOf(dependency.Symbol);
+        //                    int targetIndex = body.IndexOf(targetSymbol);
+
+        //                    if (dependencyIndex == -1 || dependencyIndex >= targetIndex)
+        //                    {
+        //                        throw new WhenDefinitionIsNotLAttributedException(production, action);
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+        //}
+
 
         private int GetDependencyLevel(SemanticAction action, Dictionary<Symbol, int> targetGroups)
         {
