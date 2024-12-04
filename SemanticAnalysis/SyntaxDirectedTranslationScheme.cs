@@ -460,23 +460,25 @@ namespace SemanticAnalysis
 
                         if (symbol != Symbol.EPSILON && !symbol.IsTerminal())
                         {
-                            // Step 1: Add First(β) \ {ε} to Follow(symbol)
                             for (int j = i + 1; j < body.Count; j++)
                             {
                                 Symbol nextSymbol = body[j];
 
-                                foreach (Symbol terminal in First[nextSymbol])
+                                if (First.ContainsKey(nextSymbol))
                                 {
-                                    if (terminal != Symbol.EPSILON && Follow[symbol].Add(terminal))
+                                    foreach (Symbol terminal in First[nextSymbol])
                                     {
-                                        updated = true;
+                                        if (terminal != Symbol.EPSILON && Follow[symbol].Add(terminal))
+                                        {
+                                            updated = true;
+                                        }
                                     }
-                                }
 
-                                // Stop if First[nextSymbol] does not contain ε
-                                if (!First[nextSymbol].Contains(Symbol.EPSILON))
-                                {
-                                    break;
+                                    // Stop if First[nextSymbol] does not contain ε
+                                    if (!First[nextSymbol].Contains(Symbol.EPSILON))
+                                    {
+                                        break;
+                                    }
                                 }
                             }
 

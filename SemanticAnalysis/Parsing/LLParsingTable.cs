@@ -1,4 +1,4 @@
-﻿using LLParsingTableException;
+using LLParsingTableException;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +10,6 @@ namespace SemanticAnalysis.Parsing
     public class LLParsingTable : ILLParsingTable
     {
         public Symbol StartSymbol { get; }
-
         private readonly Dictionary<Symbol, Dictionary<Symbol, Production?>> _table;
 
         public LLParsingTable(ISyntaxDirectedTranslationScheme scheme)
@@ -18,81 +17,94 @@ namespace SemanticAnalysis.Parsing
             StartSymbol = scheme.StartSymbol;
             _table = new Dictionary<Symbol, Dictionary<Symbol, Production?>>();
 
-
             foreach (var rule in scheme.Rules)
             {
-                Production production = rule.Key;
-
-                //Symbol head = rule.production.Head;
-                Symbol head = production.Head;
-
-                // Initialiser la table pour ce non-terminal
+                var production = rule.Key;
+                var head = production.Head;
+                
+                // Initialize table entry for this non-terminal if needed
                 if (!_table.ContainsKey(head))
                 {
                     _table[head] = new Dictionary<Symbol, Production?>();
                 }
 
-                // Calculer First(body) pour chaque production
-                HashSet<Symbol> firstSet = scheme.FirstOfBody(production.Body);
+                var firstSet = scheme.FirstOfBody(production.Body);
 
-                foreach (Symbol terminal in firstSet)
+                // Check for First/Follow conflict
+                // A First/Follow conflict occurs when:
+                // 1. The production derives epsilon (ε ∈ First(body))
+                // 2. AND there's a terminal in both First(A) and Follow(A)
+                if (firstSet.Contains(Symbol.EPSILON))
                 {
-                    if (terminal == Symbol.EPSILON) continue; // Ne pas inclure epsilon dans les conflits
+                    var followSet = scheme.Follow[head];
+                    var firstOfA = scheme.First[head];
+                    
+                    // Check if there's any terminal that's in both First(A) and Follow(A)
+                    if (firstOfA.Intersect(followSet).Any())
+                    {
+                        throw new WhenFirstFollowConflictException(
+                            head,
+                            production,
+                            firstOfA.Intersect(followSet).First()
+                        );
+                    }
+                }
 
-                    // Vérifier les conflits First/First
+                // Add entries to the table (this part would only execute if no conflict was found)
+                foreach (var terminal in firstSet.Where(t => t != Symbol.EPSILON))
+                {
                     if (_table[head].ContainsKey(terminal))
                     {
-                        Production? existingProduction = _table[head][terminal];
-                        throw new WhenFirstFirstConflictException(head, production, existingProduction);
+                        throw new WhenFirstFirstConflictException(head, production, _table[head][terminal]);
                     }
-
-                    // Ajouter la production à la table
                     _table[head][terminal] = production;
                 }
 
-                // Gestion de epsilon (transférer au Follow(head))
                 if (firstSet.Contains(Symbol.EPSILON))
                 {
-                    HashSet<Symbol> followSet = scheme.Follow[head];
-                    foreach (Symbol followSymbol in followSet)
+                    foreach (var terminal in scheme.Follow[head])
                     {
-                        if (_table[head].ContainsKey(followSymbol))
+                        if (_table[head].ContainsKey(terminal))
                         {
-                            Production? existingProduction = _table[head][followSymbol];
-                            throw new WhenFirstFirstConflictException(head, production, existingProduction);
+                            throw new WhenFirstFirstConflictException(head, production, _table[head][terminal]);
                         }
-
-                        _table[head][followSymbol] = production;
+                        _table[head][terminal] = production;
                     }
                 }
             }
-
-
-            /* --- À COMPLÉTER (logique et gestion des erreurs) --- */
         }
-
 
         public Production? GetProduction(Symbol nonterminal, Symbol terminal)
         {
-            /* --- À COMPLÉTER (gestion des erreurs seulement) --- */
+            // Verify that the "nonterminal" parameter is actually a non-terminal
+            if (nonterminal.Type == SymbolType.Terminal)
+            {
+                throw new WhenNonterminalIsTerminalException(nonterminal);
+            }
 
-            // Vérification que le non-terminal existe dans la table
+            // Verify that the "nonterminal" parameter is not a special symbol
+            if (nonterminal.Type == SymbolType.Special)
+            {
+                throw new WhenNonterminalIsSpecialException(nonterminal);
+            }
+
+            // Verify that the "terminal" parameter is actually a terminal
+            if (terminal.Type == SymbolType.Nonterminal)
+            {
+                throw new WhenTerminalIsNonterminalException(terminal);
+            }
+
             if (!_table.ContainsKey(nonterminal))
             {
-                return null; // Retourner null si le non-terminal n'existe pas
+                return null;
             }
 
-            // Vérification que le terminal existe dans le dictionnaire associé au non-terminal
             if (!_table[nonterminal].ContainsKey(terminal))
             {
-                return null; // Retourner null si le terminal n'existe pas pour ce non-terminal
+                return null;
             }
 
-            return _table[nonterminal][terminal]; 
+            return _table[nonterminal][terminal];
         }
-
-        //var tt = _table[nonterminal];
-        //var ss = tt[terminal];
-
     }
 }

@@ -1,4 +1,4 @@
-﻿using LLParsingTableException;
+using LLParsingTableException;
 using SemanticAnalysis;
 using SemanticAnalysis.Attributes;
 using SemanticAnalysis.Parsing;
@@ -88,15 +88,15 @@ namespace SemanticAnalysisTests
                 nonterminals: new HashSet<Symbol> { symbol_S, symbol_A, symbol_B },
                 rules: new Dictionary<Production, List<SemanticAction>>
                 {
-            { production1, new List<SemanticAction>() },
-            { production2, new List<SemanticAction>() },
-            { productionA, new List<SemanticAction>() },
-            { productionB, new List<SemanticAction>() }
+                    { production1, new List<SemanticAction>() },
+                    { production2, new List<SemanticAction>() },
+                    { productionA, new List<SemanticAction>() },
+                    { productionB, new List<SemanticAction>() }
                 },
                 first: new Dictionary<Symbol, HashSet<Symbol>>
                 {
-            { symbol_A, new HashSet<Symbol> { terminal_a } },
-            { symbol_B, new HashSet<Symbol> { terminal_a } }
+                    { symbol_A, new HashSet<Symbol> { terminal_a } },
+                    { symbol_B, new HashSet<Symbol> { terminal_a } }
                 },
                 follow: new Dictionary<Symbol, HashSet<Symbol>>() // Pas pertinent ici
             );
@@ -111,25 +111,124 @@ namespace SemanticAnalysisTests
         [Test]
         public void Constructor_WhenFirstFollowConflict_ShouldThrowException()
         {
-            Assert.Fail();
+            // Arrange
+            // Create symbols for the grammar S → A a, A → a | ε
+            var symbol_S = new Symbol("S", SymbolType.Nonterminal);
+            var symbol_A = new Symbol("A", SymbolType.Nonterminal);
+            var terminal_a = new Symbol("a", SymbolType.Terminal);
+
+            // Create productions
+            var production_S = new Production(symbol_S, new List<Symbol> { symbol_A, terminal_a }); // S → A a
+            var production_A1 = new Production(symbol_A, new List<Symbol> { terminal_a });          // A → a
+            var production_A2 = new Production(symbol_A, new List<Symbol> { Symbol.EPSILON });      // A → ε
+
+            // Create rules dictionary
+            var rules = new Dictionary<Production, HashSet<SemanticAction>>
+            {
+                { production_S, new HashSet<SemanticAction>() },
+                { production_A1, new HashSet<SemanticAction>() },
+                { production_A2, new HashSet<SemanticAction>() }
+            };
+
+            // Create scheme
+            var scheme = new SyntaxDirectedTranslationScheme(symbol_S, rules);
+
+            // Set First and Follow sets
+            // First(A) = {a, ε}
+            scheme.First[symbol_A] = new HashSet<Symbol> { terminal_a, Symbol.EPSILON };
+            // Follow(A) = {a} because A is followed by 'a' in S → A a
+            scheme.Follow[symbol_A] = new HashSet<Symbol> { terminal_a };
+
+            // Act & Assert
+            var exception = Assert.Throws<WhenFirstFollowConflictException>(() => new LLParsingTable(scheme));
+
+            // Verify exception details
+            Assert.Multiple(() =>
+            {
+                Assert.That(exception.NonTerminal, Is.EqualTo(symbol_A), "Exception should reference non-terminal A");
+                Assert.That(exception.ConflictingProduction, Is.EqualTo(production_A2), "Exception should reference A → ε production");
+                Assert.That(exception.ConflictingSymbol, Is.EqualTo(terminal_a), "Exception should reference terminal 'a'");
+            });
         }
 
         [Test]
         public void GetProduction_WhenNonterminalIsTerminal_ShouldThrowException()
         {
-            Assert.Fail();
+            // Arrange
+            var symbol_S = new Symbol("S", SymbolType.Nonterminal);
+            var terminal_a = new Symbol("a", SymbolType.Terminal);
+            
+            var production = new Production(symbol_S, new List<Symbol> { terminal_a });
+            var rules = new Dictionary<Production, HashSet<SemanticAction>>
+            {
+                { production, new HashSet<SemanticAction>() }
+            };
+
+            var scheme = new SyntaxDirectedTranslationScheme(symbol_S, rules);
+            var table = new LLParsingTable(scheme);
+
+            // Act & Assert
+            // Try to get production with terminal 'a' as nonterminal parameter
+            var exception = Assert.Throws<WhenNonterminalIsTerminalException>(
+                () => table.GetProduction(terminal_a, terminal_a)
+            );
+
+            // Verify the exception contains the correct terminal symbol
+            Assert.That(exception.TerminalSymbol, Is.EqualTo(terminal_a));
         }
 
         [Test]
         public void GetProduction_WhenNonterminalIsSpecial_ShouldThrowException()
         {
-            Assert.Fail();
+            // Arrange
+            var symbol_S = new Symbol("S", SymbolType.Nonterminal);
+            var terminal_a = new Symbol("a", SymbolType.Terminal);
+            var special_symbol = Symbol.EPSILON;  // EPSILON is a special symbol
+            
+            var production = new Production(symbol_S, new List<Symbol> { terminal_a });
+            var rules = new Dictionary<Production, HashSet<SemanticAction>>
+            {
+                { production, new HashSet<SemanticAction>() }
+            };
+
+            var scheme = new SyntaxDirectedTranslationScheme(symbol_S, rules);
+            var table = new LLParsingTable(scheme);
+
+            // Act & Assert
+            // Try to get production with EPSILON (special symbol) as nonterminal parameter
+            var exception = Assert.Throws<WhenNonterminalIsSpecialException>(
+                () => table.GetProduction(special_symbol, terminal_a)
+            );
+
+            // Verify the exception contains the correct special symbol
+            Assert.That(exception.SpecialSymbol, Is.EqualTo(special_symbol));
         }
 
         [Test]
         public void GetProduction_WhenTerminalIsNonterminal_ShouldThrowException()
         {
-            Assert.Fail();
+            // Arrange
+            var symbol_S = new Symbol("S", SymbolType.Nonterminal);
+            var symbol_A = new Symbol("A", SymbolType.Nonterminal);  // This will be incorrectly used as terminal
+            var terminal_a = new Symbol("a", SymbolType.Terminal);
+            
+            var production = new Production(symbol_S, new List<Symbol> { terminal_a });
+            var rules = new Dictionary<Production, HashSet<SemanticAction>>
+            {
+                { production, new HashSet<SemanticAction>() }
+            };
+
+            var scheme = new SyntaxDirectedTranslationScheme(symbol_S, rules);
+            var table = new LLParsingTable(scheme);
+
+            // Act & Assert
+            // Try to get production with non-terminal 'A' as terminal parameter
+            var exception = Assert.Throws<WhenTerminalIsNonterminalException>(
+                () => table.GetProduction(symbol_S, symbol_A)
+            );
+
+            // Verify the exception contains the correct non-terminal symbol
+            Assert.That(exception.NonTerminalSymbol, Is.EqualTo(symbol_A));
         }
 
         [Test]
