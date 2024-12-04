@@ -88,6 +88,12 @@ namespace SemanticAnalysis.Parsing
                 throw new WhenNonterminalIsSpecialException(nonterminal);
             }
 
+            // Verify that the "terminal" parameter is not a special symbol other than 'end'
+            if (terminal.Type == SymbolType.Special && terminal != Symbol.END)
+            {
+                throw new WhenTerminalIsSpecialOtherThanEndException(terminal);
+            }
+
             // Verify that the "terminal" parameter is actually a terminal
             if (terminal.Type == SymbolType.Nonterminal)
             {

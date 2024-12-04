@@ -234,7 +234,47 @@ namespace SemanticAnalysisTests
         [Test]
         public void GetProduction_WhenTerminalIsSpecialOtherThanEnd_ShouldThrowException()
         {
-            Assert.Fail();
+            // Arrange
+            var symbol_S = new Symbol("S", SymbolType.Nonterminal);
+            var terminal_a = new Symbol("a", SymbolType.Terminal);
+            var special_epsilon = Symbol.EPSILON;
+            var special_end = Symbol.END;
+
+            var production = new Production(symbol_S, new List<Symbol> { terminal_a });
+            
+            var scheme = new TestSyntaxDirectedTranslationScheme(
+                startSymbol: symbol_S,
+                terminals: new HashSet<Symbol> { terminal_a, special_end },  // Include 'end' in terminals
+                nonterminals: new HashSet<Symbol> { symbol_S },
+                rules: new Dictionary<Production, List<SemanticAction>>
+                {
+                    { production, new List<SemanticAction>() }
+                },
+                first: new Dictionary<Symbol, HashSet<Symbol>>
+                {
+                    { symbol_S, new HashSet<Symbol> { terminal_a } },
+                    { terminal_a, new HashSet<Symbol> { terminal_a } }
+                },
+                follow: new Dictionary<Symbol, HashSet<Symbol>>
+                {
+                    { symbol_S, new HashSet<Symbol> { special_end } }  // Add 'end' to follow set
+                }
+            );
+
+            var table = new LLParsingTable(scheme);
+
+            // Act & Assert
+            // 1. Verify that special symbol 'end' is allowed
+            Assert.DoesNotThrow(() => table.GetProduction(symbol_S, special_end),
+                "GetProduction should allow the special symbol 'end'");
+
+            // 2. Verify that other special symbols throw an exception
+            var exception = Assert.Throws<WhenTerminalIsSpecialOtherThanEndException>(() => 
+                table.GetProduction(symbol_S, special_epsilon));
+
+            // 3. Verify the exception contains the correct special symbol
+            Assert.That(exception.Terminal.Name, Is.EqualTo("epsilon"),
+                "Exception should contain the special symbol that caused it");
         }
 
         [Test]
