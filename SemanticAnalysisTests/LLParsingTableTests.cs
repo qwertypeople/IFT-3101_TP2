@@ -211,7 +211,7 @@ namespace SemanticAnalysisTests
             var symbol_S = new Symbol("S", SymbolType.Nonterminal);
             var symbol_A = new Symbol("A", SymbolType.Nonterminal);  // This will be incorrectly used as terminal
             var terminal_a = new Symbol("a", SymbolType.Terminal);
-            
+
             var production = new Production(symbol_S, new List<Symbol> { terminal_a });
             var rules = new Dictionary<Production, HashSet<SemanticAction>>
             {
@@ -240,7 +240,11 @@ namespace SemanticAnalysisTests
             var special_epsilon = Symbol.EPSILON;
             var special_end = Symbol.END;
 
-            var production = new Production(symbol_S, new List<Symbol> { terminal_a });
+            // Create two productions:
+            // S → a
+            var production1 = new Production(symbol_S, new List<Symbol> { terminal_a });
+            // S → ε (this will cause 'end' to be added from Follow set)
+            var production2 = new Production(symbol_S, new List<Symbol> { Symbol.EPSILON });
             
             var scheme = new TestSyntaxDirectedTranslationScheme(
                 startSymbol: symbol_S,
@@ -248,12 +252,15 @@ namespace SemanticAnalysisTests
                 nonterminals: new HashSet<Symbol> { symbol_S },
                 rules: new Dictionary<Production, List<SemanticAction>>
                 {
-                    { production, new List<SemanticAction>() }
+                    { production1, new List<SemanticAction>() },
+                    { production2, new List<SemanticAction>() }
                 },
                 first: new Dictionary<Symbol, HashSet<Symbol>>
                 {
-                    { symbol_S, new HashSet<Symbol> { terminal_a } },
-                    { terminal_a, new HashSet<Symbol> { terminal_a } }
+                    { symbol_S, new HashSet<Symbol> { terminal_a, Symbol.EPSILON } },  // S can derive epsilon
+                    { terminal_a, new HashSet<Symbol> { terminal_a } },
+                    { special_end, new HashSet<Symbol> { special_end } },
+                    { Symbol.EPSILON, new HashSet<Symbol> { Symbol.EPSILON } }  // Add First set for epsilon
                 },
                 follow: new Dictionary<Symbol, HashSet<Symbol>>
                 {
@@ -273,20 +280,96 @@ namespace SemanticAnalysisTests
                 table.GetProduction(symbol_S, special_epsilon));
 
             // 3. Verify the exception contains the correct special symbol
-            Assert.That(exception.Terminal.Name, Is.EqualTo("epsilon"),
+            Assert.That(exception.Terminal, Is.EqualTo(Symbol.EPSILON),
                 "Exception should contain the special symbol that caused it");
         }
 
         [Test]
         public void GetProduction_WhenNonterminalIsNotInTable_ShouldThrowException()
         {
-            Assert.Fail();
+            // Arrange
+            var symbol_S = new Symbol("S", SymbolType.Nonterminal);
+            var symbol_A = new Symbol("A", SymbolType.Nonterminal); // This one won't be in the table
+            var terminal_a = new Symbol("a", SymbolType.Terminal);
+
+            var production = new Production(symbol_S, new List<Symbol> { terminal_a });
+            
+            var scheme = new TestSyntaxDirectedTranslationScheme(
+                startSymbol: symbol_S,
+                terminals: new HashSet<Symbol> { terminal_a },
+                nonterminals: new HashSet<Symbol> { symbol_S },  // Only S is in the grammar
+                rules: new Dictionary<Production, List<SemanticAction>>
+                {
+                    { production, new List<SemanticAction>() }
+                },
+                first: new Dictionary<Symbol, HashSet<Symbol>>
+                {
+                    { symbol_S, new HashSet<Symbol> { terminal_a } },
+                    { terminal_a, new HashSet<Symbol> { terminal_a } },
+                    { Symbol.END, new HashSet<Symbol> { Symbol.END } }
+                },
+                follow: new Dictionary<Symbol, HashSet<Symbol>>
+                {
+                    { symbol_S, new HashSet<Symbol> { Symbol.END } }
+                }
+            );
+
+            var table = new LLParsingTable(scheme);
+
+            // Act & Assert
+            var exception = Assert.Throws<WhenNonterminalIsNotInTableException>(() => 
+                table.GetProduction(symbol_A, terminal_a));
+
+            // Verify the exception contains the correct nonterminal
+            Assert.That(exception.Nonterminal.Name, Is.EqualTo("A"),
+                "Exception should contain the nonterminal that was not in the table");
         }
 
         [Test]
         public void GetProduction_WhenTerminalIsNotInTable_ShouldThrowException()
         {
-            Assert.Fail();
+            // Arrange
+            var symbol_S = new Symbol("S", SymbolType.Nonterminal);
+            var terminal_a = new Symbol("a", SymbolType.Terminal);
+            var terminal_b = new Symbol("b", SymbolType.Terminal); // This one won't be in the table
+
+            var production = new Production(symbol_S, new List<Symbol> { terminal_a });
+            
+            var scheme = new TestSyntaxDirectedTranslationScheme(
+                startSymbol: symbol_S,
+                terminals: new HashSet<Symbol> { terminal_a },  // Only 'a' is in the grammar
+                nonterminals: new HashSet<Symbol> { symbol_S },
+                rules: new Dictionary<Production, List<SemanticAction>>
+                {
+                    { production, new List<SemanticAction>() }
+                },
+                first: new Dictionary<Symbol, HashSet<Symbol>>
+                {
+                    { symbol_S, new HashSet<Symbol> { terminal_a } },
+                    { terminal_a, new HashSet<Symbol> { terminal_a } },
+                    { terminal_b, new HashSet<Symbol> { terminal_b } },
+                    { Symbol.END, new HashSet<Symbol> { Symbol.END } }
+                },
+                follow: new Dictionary<Symbol, HashSet<Symbol>>
+                {
+                    { symbol_S, new HashSet<Symbol> { Symbol.END } }
+                }
+            );
+
+            var table = new LLParsingTable(scheme);
+
+            // Act & Assert
+            var exception = Assert.Throws<WhenTerminalIsNotInTableException>(() => 
+                table.GetProduction(symbol_S, terminal_b));
+
+            // Verify the exception contains the correct symbols
+            Assert.Multiple(() =>
+            {
+                Assert.That(exception.Terminal.Name, Is.EqualTo("b"),
+                    "Exception should contain the terminal that was not in the table");
+                Assert.That(exception.Nonterminal.Name, Is.EqualTo("S"),
+                    "Exception should contain the nonterminal we were looking up");
+            });
         }
     }
 }

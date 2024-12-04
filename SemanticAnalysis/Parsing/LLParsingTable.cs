@@ -76,38 +76,44 @@ namespace SemanticAnalysis.Parsing
 
         public Production? GetProduction(Symbol nonterminal, Symbol terminal)
         {
-            // Verify that the "nonterminal" parameter is actually a non-terminal
+            // First verify symbol types before checking table contents
+            
+            // 1. Verify that the "nonterminal" parameter is actually a non-terminal
             if (nonterminal.Type == SymbolType.Terminal)
             {
                 throw new WhenNonterminalIsTerminalException(nonterminal);
             }
 
-            // Verify that the "nonterminal" parameter is not a special symbol
+            // 2. Verify that the "nonterminal" parameter is not a special symbol
             if (nonterminal.Type == SymbolType.Special)
             {
                 throw new WhenNonterminalIsSpecialException(nonterminal);
             }
 
-            // Verify that the "terminal" parameter is not a special symbol other than 'end'
-            if (terminal.Type == SymbolType.Special && terminal != Symbol.END)
-            {
-                throw new WhenTerminalIsSpecialOtherThanEndException(terminal);
-            }
-
-            // Verify that the "terminal" parameter is actually a terminal
+            // 3. Verify that the "terminal" parameter is actually a terminal or 'end'
             if (terminal.Type == SymbolType.Nonterminal)
             {
                 throw new WhenTerminalIsNonterminalException(terminal);
             }
 
-            if (!_table.ContainsKey(nonterminal))
+            // 4. Verify that if it's a special symbol, it must be 'end'
+            if (terminal.Type == SymbolType.Special && terminal != Symbol.END)
             {
-                return null;
+                throw new WhenTerminalIsSpecialOtherThanEndException(terminal);
             }
 
+            // After type validation, check table contents
+
+            // 5. Verify that the nonterminal is in the table
+            if (!_table.ContainsKey(nonterminal))
+            {
+                throw new WhenNonterminalIsNotInTableException(nonterminal);
+            }
+
+            // 6. Verify that the terminal is in the table for this nonterminal
             if (!_table[nonterminal].ContainsKey(terminal))
             {
-                return null;
+                throw new WhenTerminalIsNotInTableException(nonterminal, terminal);
             }
 
             return _table[nonterminal][terminal];
