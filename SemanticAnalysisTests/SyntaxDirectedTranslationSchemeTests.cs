@@ -142,9 +142,14 @@ namespace SemanticAnalysisTests
 
             // Corps de la production principale
             var body1 = new List<Symbol> { symbol_B, symbol_C, symbol_a };
+            var body2 = new List<Symbol> { symbol_a };
+            var body3 = new List<Symbol> { symbol_a };
 
             // Définition des productions
             Production production1 = new Production(startSymbol, body1);
+            Production production2 = new Production(symbol_B, body2);
+            Production production3 = new Production(symbol_C, body3);
+
 
             // Dictionnaire des règles
             var definition = new Dictionary<Production, HashSet<SemanticAction>>();
@@ -161,8 +166,11 @@ namespace SemanticAnalysisTests
                 action: _ => { } // Simule une action
             );
 
-            // Associer l'action à la production principale
-            definition[production1] = new HashSet<SemanticAction> { action };
+            // Associer l'action à la production principale            
+            definition.Add(production1, new HashSet<SemanticAction> { action });
+            definition.Add(production2, new HashSet<SemanticAction>());
+            definition.Add(production3, new HashSet<SemanticAction>());
+            
 
             // Act & Assert: Vérification que l'exception est levée
             Assert.Throws<WhenDefinitionIsNotLAttributedException>(() =>

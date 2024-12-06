@@ -110,10 +110,28 @@ namespace SemanticAnalysis.Parsing
                 throw new WhenNonterminalIsNotInTableException(nonterminal);
             }
 
+            if (terminal != Symbol.END)
+            {
+                bool terminalFouded = false;
+                foreach (var row in _table.Values)
+                {
+                    if(row.ContainsKey(terminal))
+                    {
+                        terminalFouded = true;
+                        break;
+                    }
+                }
+
+                if (!terminalFouded)
+                {
+                    throw new WhenTerminalIsNotInTableException(nonterminal, terminal);
+                }
+            }
+
             // 6. Verify that the terminal is in the table for this nonterminal
             if (!_table[nonterminal].ContainsKey(terminal))
-            {
-                throw new WhenTerminalIsNotInTableException(nonterminal, terminal);
+            {                
+                return null;
             }
 
             return _table[nonterminal][terminal];

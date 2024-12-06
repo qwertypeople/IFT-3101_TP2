@@ -119,23 +119,17 @@ namespace SemanticAnalysis
 
                             if (targetIndex == -1)
                             {
-                                throw new WhenDefinitionIsNotLAttributedException(
-                                    production,
-                                    action);
+                                throw new WhenDefinitionIsNotLAttributedException(production, action);
                             }
 
                             if (sourceIndex == -1)
                             {
-                                throw new WhenDefinitionIsNotLAttributedException(
-                                    production,
-                                    action);
+                                throw new WhenDefinitionIsNotLAttributedException(production, action);
                             }
 
                             if (sourceIndex >= targetIndex)
                             {
-                                throw new WhenDefinitionIsNotLAttributedException(
-                                    production,
-                                    action);
+                                throw new WhenDefinitionIsNotLAttributedException(production, action);
                             }
                         }
                     }
