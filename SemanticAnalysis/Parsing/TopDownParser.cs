@@ -1,4 +1,5 @@
-﻿using System;
+using LLParsingTableException;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -28,7 +29,9 @@ namespace SemanticAnalysis.Parsing
                 if (top.Type == SymbolType.Terminal)
                 {
                     // Vérifier la correspondance avec le prochain symbole de l'entrée
-                    if (inputIndex >= input.Count || top != input[inputIndex].Symbol)
+                    if (inputIndex >= input.Count)
+                        throw new WhenCannotMatchInputException();
+                    if (top != input[inputIndex].Symbol)
                         throw new WhenCannotMatchInputException();
 
                     // Avancer dans l'entrée
@@ -38,10 +41,17 @@ namespace SemanticAnalysis.Parsing
                 {
                     // Récupérer une production à partir de la table d'analyse
                     Symbol lookahead = input[inputIndex].Symbol;
-                    var production = _parsingTable.GetProduction(top, lookahead);
-
-                    if (production == null)
-                        throw new InvalidOperationException($"No production found for {top} with lookahead {lookahead}.");
+                    Production? production;
+                    try
+                    {
+                        production = _parsingTable.GetProduction(top, lookahead);
+                        if (production == null)
+                            throw new WhenNoProductionDefinedException();
+                    }
+                    catch (WhenTerminalIsNotInTableException)
+                    {
+                        throw new WhenNoProductionDefinedException();
+                    }
 
                     // Ajouter les symboles de la production à la pile (dans l'ordre inverse)
                     var bodyReversed = production.Body;
