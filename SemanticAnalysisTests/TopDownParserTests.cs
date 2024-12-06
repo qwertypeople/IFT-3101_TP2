@@ -91,56 +91,44 @@ namespace SemanticAnalysisTests
         {
             // Arrange
             var symbol_E = new Symbol("E", SymbolType.Nonterminal);
-            var symbol_T = new Symbol("T", SymbolType.Nonterminal);
-            var terminal_plus = new Symbol("+", SymbolType.Terminal);
             var terminal_a = new Symbol("a", SymbolType.Terminal);
+            var terminal_b = new Symbol("b", SymbolType.Terminal);
             var special_end = Symbol.END;
 
-            // Productions:
-            // E → T + a     (E can start with whatever T starts with)
-            // T → a         (T can only start with 'a')
-            var production1 = new Production(
+            // Production: E → a
+            var production = new Production(
                 symbol_E,
-                new List<Symbol> { symbol_T, terminal_plus, terminal_a }
-            );
-            var production2 = new Production(
-                symbol_T,
                 new List<Symbol> { terminal_a }
             );
 
             var scheme = new TestSyntaxDirectedTranslationScheme(
                 startSymbol: symbol_E,
-                terminals: new HashSet<Symbol> { terminal_a, terminal_plus, special_end },
-                nonterminals: new HashSet<Symbol> { symbol_E, symbol_T },
+                terminals: new HashSet<Symbol> { terminal_a, terminal_b, special_end },
+                nonterminals: new HashSet<Symbol> { symbol_E },
                 rules: new Dictionary<Production, List<SemanticAction>>
                 {
-                    { production1, new List<SemanticAction>() },
-                    { production2, new List<SemanticAction>() }
+                    { production, new List<SemanticAction>() }
                 },
                 first: new Dictionary<Symbol, HashSet<Symbol>>
                 {
-                    { symbol_E, new HashSet<Symbol> { terminal_a } },        // E starts with what T starts with (a)
-                    { symbol_T, new HashSet<Symbol> { terminal_a } },        // T starts with a
+                    { symbol_E, new HashSet<Symbol> { terminal_a } },
                     { terminal_a, new HashSet<Symbol> { terminal_a } },
-                    { terminal_plus, new HashSet<Symbol> { terminal_plus } },
+                    { terminal_b, new HashSet<Symbol> { terminal_b } },
                     { special_end, new HashSet<Symbol> { special_end } }
                 },
                 follow: new Dictionary<Symbol, HashSet<Symbol>>
                 {
-                    { symbol_E, new HashSet<Symbol> { special_end } },
-                    { symbol_T, new HashSet<Symbol> { terminal_plus } }      // T can be followed by +
+                    { symbol_E, new HashSet<Symbol> { special_end } }
                 }
             );
 
             var parsingTable = new LLParsingTable(scheme);
             var parser = new TopDownParser(parsingTable);
 
-            // Try to parse "+ a end" - there's no production for E that starts with '+'
-            // but '+' is a valid terminal in the grammar (it appears in production1)
+            // Try to parse "b end" when only "a end" is valid
             var tokens = new List<Token>
             {
-                new Token(terminal_plus, "+"),   // No production for E starts with '+'
-                new Token(terminal_a, "a"),
+                new Token(terminal_b, "b"),     // 'b' is a valid terminal but no production for E starts with it
                 new Token(special_end, "end")
             };
 

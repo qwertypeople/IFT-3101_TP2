@@ -18,33 +18,72 @@ namespace SemanticAnalysis.Parsing
             if (input == null || input.Count == 0 || input.Last().Symbol != Symbol.END)
                 throw new WhenEndTokenIsNotAtEndOfInputException();
 
-            // Initialiser la pile avec le symbole de fin et le symbole de départ
-            Stack<Symbol> stack = new Stack<Symbol>(new[] { Symbol.END, _parsingTable.StartSymbol });
+            // Obtenir la production initiale pour le symbole de départ
+            Symbol startSymbol = _parsingTable.StartSymbol;
+            Symbol firstLookahead = input[0].Symbol;
+            Production? startProduction;
+            try
+            {
+                startProduction = _parsingTable.GetProduction(startSymbol, firstLookahead);
+                if (startProduction == null)
+                    throw new WhenNoProductionDefinedException();
+            }
+            catch (WhenTerminalIsNotInTableException)
+            {
+                throw new WhenNoProductionDefinedException();
+            }
+            
+            // Créer le nœud racine avec le symbole de départ et sa production
+            var root = new ParseNode(startSymbol, startProduction);
+            
+            // Initialiser la pile avec le symbole de fin et les symboles de la production initiale
+            var stack = new Stack<(Symbol Symbol, ParseNode? Node)>();
+            stack.Push((Symbol.END, null));  // On met juste le symbole END, pas de nœud
+
+            // Créer les nœuds enfants pour la production initiale
+            foreach (var bodySymbol in startProduction.Body)
+            {
+                var childNode = new ParseNode(bodySymbol, bodySymbol.IsTerminal() ? null : startProduction);
+                root.Children.Add(childNode);
+            }
+
+            // Ajouter les nœuds à la pile dans l'ordre inverse
+            for (int i = root.Children.Count - 1; i >= 0; i--)
+            {
+                stack.Push((root.Children[i].Symbol, root.Children[i]));
+            }
+            
             int inputIndex = 0;
 
             while (stack.Count > 0)
             {
-                Symbol top = stack.Pop();
+                var (symbol, node) = stack.Pop();
 
-                if (top.Type == SymbolType.Terminal)
+                if (symbol.Type == SymbolType.Special)  // Pour END
+                {
+                    if (symbol != Symbol.END || inputIndex >= input.Count || input[inputIndex].Symbol != Symbol.END)
+                        throw new WhenEndTokenIsNotAtEndOfInputException();
+                    inputIndex++;
+                }
+                else if (symbol.Type == SymbolType.Terminal)
                 {
                     // Vérifier la correspondance avec le prochain symbole de l'entrée
                     if (inputIndex >= input.Count)
                         throw new WhenCannotMatchInputException();
-                    if (top != input[inputIndex].Symbol)
+                    if (symbol != input[inputIndex].Symbol)
                         throw new WhenCannotMatchInputException();
 
-                    // Avancer dans l'entrée
+                    // Le nœud terminal est déjà créé, avancer dans l'entrée
                     inputIndex++;
                 }
-                else if (top.Type == SymbolType.Nonterminal)
+                else if (symbol.Type == SymbolType.Nonterminal && node != null)
                 {
                     // Récupérer une production à partir de la table d'analyse
                     Symbol lookahead = input[inputIndex].Symbol;
                     Production? production;
                     try
                     {
-                        production = _parsingTable.GetProduction(top, lookahead);
+                        production = _parsingTable.GetProduction(symbol, lookahead);
                         if (production == null)
                             throw new WhenNoProductionDefinedException();
                     }
@@ -53,16 +92,22 @@ namespace SemanticAnalysis.Parsing
                         throw new WhenNoProductionDefinedException();
                     }
 
-                    // Ajouter les symboles de la production à la pile (dans l'ordre inverse)
-                    var bodyReversed = production.Body;
-                    bodyReversed.Reverse();
-                    foreach (var symbol in bodyReversed)
-                        stack.Push(symbol);
+                    // Créer les nœuds enfants pour chaque symbole dans la production
+                    foreach (var bodySymbol in production.Body)
+                    {
+                        var childNode = new ParseNode(bodySymbol, bodySymbol.IsTerminal() ? null : production);
+                        node.Children.Add(childNode);
+                    }
+
+                    // Ajouter les nœuds à la pile dans l'ordre inverse
+                    for (int i = node.Children.Count - 1; i >= 0; i--)
+                    {
+                        stack.Push((node.Children[i].Symbol, node.Children[i]));
+                    }
                 }
             }
 
-            // Retourner l'arbre d'analyse
-            return new ParseNode(_parsingTable.StartSymbol, null);
+            return root;
         }
     }
 }
