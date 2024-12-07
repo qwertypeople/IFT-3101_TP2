@@ -1,3 +1,4 @@
+using LLParsingTableException;
 using ParseNodeExecption;
 using System;
 using System.Collections.Generic;
@@ -21,7 +22,16 @@ namespace SemanticAnalysis.Parsing
 
             
             // Obtenir la production pour le symbole de départ
-            Production? startProduction = _parsingTable.GetProduction(_parsingTable.StartSymbol, input[0].Symbol);
+            Production? startProduction;
+            try
+            {
+                startProduction = _parsingTable.GetProduction(_parsingTable.StartSymbol, input[0].Symbol);
+            }
+            catch (WhenTerminalIsNotInTableException)
+            {
+                throw new WhenNoProductionDefinedException();
+            }
+            
             if (startProduction == null)
             {
                 throw new WhenNoProductionDefinedException();
@@ -69,7 +79,16 @@ namespace SemanticAnalysis.Parsing
                 else if (symbol.IsNonterminal())
                 {
                     // Obtenir la production depuis la table d'analyse
-                    Production? production = _parsingTable.GetProduction(symbol, currentInput);
+                    Production? production;
+                    try 
+                    {
+                        production = _parsingTable.GetProduction(symbol, currentInput);
+                    }
+                    catch (WhenTerminalIsNotInTableException)
+                    {
+                        throw new WhenNoProductionDefinedException();
+                    }
+
                     if (production == null)
                     {
                         throw new WhenNoProductionDefinedException();
