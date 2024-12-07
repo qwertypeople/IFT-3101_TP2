@@ -1,4 +1,4 @@
-using LLParsingTableException;
+using ParseNodeExecption;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,97 +14,82 @@ namespace SemanticAnalysis.Parsing
 
         public ParseNode Parse(List<Token> input)
         {
-            // Vérifier que l'entrée contient au moins le symbole END
             if (input == null || input.Count == 0 || input.Last().Symbol != Symbol.END)
-                throw new WhenEndTokenIsNotAtEndOfInputException();
-
-            // Obtenir la production initiale pour le symbole de départ
-            Symbol startSymbol = _parsingTable.StartSymbol;
-            Symbol firstLookahead = input[0].Symbol;
-            Production? startProduction;
-            try
             {
-                startProduction = _parsingTable.GetProduction(startSymbol, firstLookahead);
-                if (startProduction == null)
-                    throw new WhenNoProductionDefinedException();
+                throw new WhenEndTokenIsNotAtEndOfInputException();
             }
-            catch (WhenTerminalIsNotInTableException)
+
+            
+            // Obtenir la production pour le symbole de départ
+            Production? startProduction = _parsingTable.GetProduction(_parsingTable.StartSymbol, input[0].Symbol);
+            if (startProduction == null)
             {
                 throw new WhenNoProductionDefinedException();
             }
-            
-            // Créer le nœud racine avec le symbole de départ et sa production
-            var root = new ParseNode(startSymbol, startProduction);
-            
-            // Initialiser la pile avec le symbole de fin et les symboles de la production initiale
-            var stack = new Stack<(Symbol Symbol, ParseNode? Node)>();
-            stack.Push((Symbol.END, null));  // On met juste le symbole END, pas de nœud
 
-            // Créer les nœuds enfants pour la production initiale
-            foreach (var bodySymbol in startProduction.Body)
+            // Créer le nœud racine avec la production initiale
+            ParseNode root = new(_parsingTable.StartSymbol, startProduction);
+
+            // Initialiser la pile avec le premier symbole du corps
+            Stack<(Symbol Symbol, ParseNode Parent)> stack = new();
+            
+            // Empiler les symboles de la production initiale
+            for (int i = startProduction.Body.Count - 1; i >= 0; i--)
             {
-                var childNode = new ParseNode(bodySymbol, bodySymbol.IsTerminal() ? null : startProduction);
-                root.Children.Add(childNode);
+                stack.Push((startProduction.Body[i], root));
             }
 
-            // Ajouter les nœuds à la pile dans l'ordre inverse
-            for (int i = root.Children.Count - 1; i >= 0; i--)
-            {
-                stack.Push((root.Children[i].Symbol, root.Children[i]));
-            }
-            
-            int inputIndex = 0;
-
+            int pos = 0;
             while (stack.Count > 0)
             {
-                var (symbol, node) = stack.Pop();
+                var (symbol, parent) = stack.Pop();
+                Symbol currentInput = input[pos].Symbol;
 
-                if (symbol.Type == SymbolType.Special)  // Pour END
+                if (symbol.IsEnd())
                 {
-                    if (symbol != Symbol.END || inputIndex >= input.Count || input[inputIndex].Symbol != Symbol.END)
-                        throw new WhenEndTokenIsNotAtEndOfInputException();
-                    inputIndex++;
-                }
-                else if (symbol.Type == SymbolType.Terminal)
-                {
-                    // Vérifier la correspondance avec le prochain symbole de l'entrée
-                    if (inputIndex >= input.Count)
-                        throw new WhenCannotMatchInputException();
-                    if (symbol != input[inputIndex].Symbol)
-                        throw new WhenCannotMatchInputException();
-
-                    // Le nœud terminal est déjà créé, avancer dans l'entrée
-                    inputIndex++;
-                }
-                else if (symbol.Type == SymbolType.Nonterminal && node != null)
-                {
-                    // Récupérer une production à partir de la table d'analyse
-                    Symbol lookahead = input[inputIndex].Symbol;
-                    Production? production;
-                    try
+                    if (!currentInput.IsEnd())
                     {
-                        production = _parsingTable.GetProduction(symbol, lookahead);
-                        if (production == null)
-                            throw new WhenNoProductionDefinedException();
+                        throw new WhenCannotMatchInputException();
                     }
-                    catch (WhenTerminalIsNotInTableException)
+                    pos++;
+                }
+                else if (symbol.IsTerminal())
+                {
+                    if (symbol != currentInput)
+                    {
+                        throw new WhenCannotMatchInputException();
+                    }
+                    parent.Children.Add(new ParseNode(symbol, null));
+                    pos++;
+                }
+                else if (symbol.IsEpsilon())
+                {
+                    parent.Children.Add(new ParseNode(Symbol.EPSILON, null));
+                }
+                else if (symbol.IsNonterminal())
+                {
+                    // Obtenir la production depuis la table d'analyse
+                    Production? production = _parsingTable.GetProduction(symbol, currentInput);
+                    if (production == null)
                     {
                         throw new WhenNoProductionDefinedException();
                     }
 
-                    // Créer les nœuds enfants pour chaque symbole dans la production
-                    foreach (var bodySymbol in production.Body)
-                    {
-                        var childNode = new ParseNode(bodySymbol, bodySymbol.IsTerminal() ? null : production);
-                        node.Children.Add(childNode);
-                    }
+                    // Créer un nouveau nœud pour ce non-terminal
+                    var newNode = new ParseNode(symbol, production);
+                    parent.Children.Add(newNode);
 
-                    // Ajouter les nœuds à la pile dans l'ordre inverse
-                    for (int i = node.Children.Count - 1; i >= 0; i--)
+                    // Empiler les symboles du corps en ordre inverse
+                    for (int i = production.Body.Count - 1; i >= 0; i--)
                     {
-                        stack.Push((node.Children[i].Symbol, node.Children[i]));
+                        stack.Push((production.Body[i], newNode));
                     }
                 }
+            }
+
+            if (pos < input.Count - 1)
+            {
+                throw new WhenCannotMatchInputException();
             }
 
             return root;

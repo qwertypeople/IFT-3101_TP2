@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -47,18 +47,7 @@ namespace SemanticAnalysis.Parsing
             Symbol = symbol;
             Production = production;
             Children = new List<ParseNode>();
-            // Si la production n'est pas nulle et que le symbole est un non-terminal,
-            // ajouter les enfants du corps de la production
-            if (Production != null && Symbol.IsNonterminal())
-            {
-                foreach (Symbol bodySymbol in Production.Body)
-                {
-                    // Créer un nœud pour chaque symbole du corps de la production
-                    // Vous pouvez adapter selon que vous avez des sous-productions spécifiques ou non
-                    ParseNode childNode = new ParseNode(bodySymbol, null); // Ici production est à null pour l'enfant
-                    Children.Add(childNode); // Ajouter le nœud enfant à la liste des enfants
-                }
-            }
+
         }
 
         public T? GetAttributeValue<T>(SemanticAttribute<T> attribute)
