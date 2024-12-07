@@ -74,7 +74,95 @@ namespace SemanticAnalysis
             ComputeFollowSets();
         }
 
+        private void ComputeFollowSets()
+        {
+            // Initialize Follow sets
+            Follow = new Dictionary<Symbol, HashSet<Symbol>>();
 
+            foreach (Symbol nonterminal in Nonterminals)
+            {
+                Follow[nonterminal] = new HashSet<Symbol>();
+            }
+
+            // Add $ to Follow(StartSymbol)
+            Follow[StartSymbol].Add(Symbol.END);
+
+            bool updated;
+
+            do
+            {
+                updated = false;
+
+                foreach (Production production in Rules.Keys)
+                {
+                    Symbol head = production.Head;
+                    List<Symbol> body = production.Body;
+
+                    // Traverse the body of the production
+                    for (int i = 0; i < body.Count; i++)
+                    {
+                        Symbol symbol = body[i];
+
+                        if (symbol != Symbol.EPSILON && !symbol.IsTerminal())
+                        {
+                            HashSet<Symbol> firstOfRest = new HashSet<Symbol>();
+                            bool allCanBeEmpty = true;
+
+                            // Calculate First of all following symbols
+                            for (int j = i + 1; j < body.Count; j++)
+                            {
+                                Symbol nextSymbol = body[j];
+
+                                if (nextSymbol.IsTerminal())
+                                {
+                                    firstOfRest.Add(nextSymbol);
+                                    allCanBeEmpty = false;
+                                    break;
+                                }
+                                else if (First.ContainsKey(nextSymbol))
+                                {
+                                    foreach (Symbol terminal in First[nextSymbol])
+                                    {
+                                        if (terminal != Symbol.EPSILON)
+                                        {
+                                            firstOfRest.Add(terminal);
+                                        }
+                                    }
+
+                                    if (!First[nextSymbol].Contains(Symbol.EPSILON))
+                                    {
+                                        allCanBeEmpty = false;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // Add First(rest) to Follow(symbol)
+                            foreach (Symbol terminal in firstOfRest)
+                            {
+                                if (Follow[symbol].Add(terminal))
+                                {
+                                    updated = true;
+                                }
+                            }
+
+                            // If all following symbols can be empty or we're at the end
+                            // add Follow(head) to Follow(symbol)
+                            if (allCanBeEmpty || i == body.Count - 1)
+                            {
+                                foreach (Symbol terminal in Follow[head])
+                                {
+                                    if (Follow[symbol].Add(terminal))
+                                    {
+                                        updated = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } while (updated);
+        }
 
         private void ValidateLAttributedGrammar(Dictionary<Production, HashSet<SemanticAction>> definition)
         {
@@ -137,7 +225,6 @@ namespace SemanticAnalysis
             }
         }
 
-
         /* --- À COMPLÉTER (logique et gestion des erreurs) --- */
         public HashSet<Symbol> FirstOfBody(List<Symbol> symbols)
         {
@@ -197,7 +284,6 @@ namespace SemanticAnalysis
 
             return firstSet;
         }
-
 
         private void SetSymbols(Dictionary<Production, HashSet<SemanticAction>> definition)
         {
@@ -423,88 +509,6 @@ namespace SemanticAnalysis
             } while (updated); // Répéter tant que des modifications sont apportées
         }
 
-        private void ComputeFollowSets()
-        {
-            // Initialize Follow sets
-            Follow = new Dictionary<Symbol, HashSet<Symbol>>();
-
-            foreach (Symbol nonterminal in Nonterminals)
-            {
-                Follow[nonterminal] = new HashSet<Symbol>();
-            }
-
-            // Add $ to Follow(StartSymbol)
-            Follow[StartSymbol].Add(Symbol.END);
-
-            bool updated;
-
-            do
-            {
-                updated = false;
-
-                foreach (Production production in Rules.Keys)
-                {
-                    Symbol head = production.Head;
-                    List<Symbol> body = production.Body;
-
-                    // Traverse the body of the production
-                    for (int i = 0; i < body.Count; i++)
-                    {
-                        Symbol symbol = body[i];
-
-                        if (symbol != Symbol.EPSILON && !symbol.IsTerminal())
-                        {
-                            for (int j = i + 1; j < body.Count; j++)
-                            {
-                                Symbol nextSymbol = body[j];
-
-                                if (First.ContainsKey(nextSymbol))
-                                {
-                                    foreach (Symbol terminal in First[nextSymbol])
-                                    {
-                                        if (terminal != Symbol.EPSILON && Follow[symbol].Add(terminal))
-                                        {
-                                            updated = true;
-                                        }
-                                    }
-
-                                    // Stop if First[nextSymbol] does not contain ε
-                                    if (!First[nextSymbol].Contains(Symbol.EPSILON))
-                                    {
-                                        break;
-                                    }
-                                }
-                            }
-
-                            // Step 2: If β or all following symbols produce ε, add Follow(head) to Follow(symbol)
-                            bool allFollowingProduceEpsilon = true;
-                            for (int j = i + 1; j < body.Count; j++)
-                            {
-                                Symbol nextSymbol = body[j];
-                                if (nextSymbol.IsTerminal() || !First[nextSymbol].Contains(Symbol.EPSILON))
-                                {
-                                    allFollowingProduceEpsilon = false;
-                                    break;
-                                }
-                            }
-
-                            if ((i == body.Count - 1 || allFollowingProduceEpsilon) && Follow.ContainsKey(head))
-                            {
-                                foreach (Symbol terminal in Follow[head])
-                                {
-                                    if (Follow[symbol].Add(terminal))
-                                    {
-                                        updated = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } while (updated); // Repeat until no updates are made
-        }
-
-      
         private void CheckForTerminalDefinition(Dictionary<Production, HashSet<SemanticAction>> definition)
         {
             List<Symbol> undefinedNonTerminals = new List<Symbol>();
@@ -535,7 +539,6 @@ namespace SemanticAnalysis
                 throw new WhenNonterminalIsNotDefinedException(undefinedNonTerminals);
             }
         }
-
 
         private void CheckForEquivalentProductions(IEnumerable<Production> productions)
         {
@@ -627,7 +630,5 @@ namespace SemanticAnalysis
             // Retourne le niveau maximal de dépendance parmi les sources
             return action.Sources.Max(source => targetGroups.ContainsKey(source.Symbol) ? targetGroups[source.Symbol] : int.MaxValue);
         }
-
-
     }
 }
