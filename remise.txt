@@ -1,9 +1,12 @@
-Version .NET et C# :
+Version .NET 	: 8.0.400
+Version C#   	: 12.0
+OS 		: Windows 10
+IDE 		: Visual Studio 2022
 
 
 --- Facultatif ---
 (Pour des fins de recensement seulement)
 
 Nombre d'heures estimé pour ce travail : 
-Énoncé suffisamment détaillé? :
+Énoncé suffisamment détaillé? : Oui
 Niveau d'appréciation : 

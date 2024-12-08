@@ -21,8 +21,8 @@ namespace SemanticAnalysis.Parsing
             {
                 var production = rule.Key;
                 var head = production.Head;
-                
-                // Initialize table entry for this non-terminal if needed
+
+                // Initialiser l'entrée de la table pour ce non-terminal si nécessaire
                 if (!_table.ContainsKey(head))
                 {
                     _table[head] = new Dictionary<Symbol, Production?>();
@@ -30,16 +30,16 @@ namespace SemanticAnalysis.Parsing
 
                 var firstSet = scheme.FirstOfBody(production.Body);
 
-                // Check for First/Follow conflict
-                // A First/Follow conflict occurs when:
-                // 1. The production derives epsilon (ε ∈ First(body))
-                // 2. AND there's a terminal in both First(A) and Follow(A)
+                // Vérifier le conflit entre First et Follow
+                // Un conflit First/Follow se produit lorsque :
+                // 1. La production dérive epsilon (ε ∈ First(body))
+                // 2. ET qu'il y a un terminal à la fois dans First(A) et Follow(A)
                 if (firstSet.Contains(Symbol.EPSILON))
                 {
                     var followSet = scheme.Follow[head];
                     var firstOfA = scheme.First[head];
-                    
-                    // Check if there's any terminal that's in both First(A) and Follow(A)
+
+                    // Vérifier s'il existe un terminal à la fois dans First(A) et Follow(A)
                     if (firstOfA.Intersect(followSet).Any())
                     {
                         throw new WhenFirstFollowConflictException(
@@ -50,7 +50,7 @@ namespace SemanticAnalysis.Parsing
                     }
                 }
 
-                // Add entries to the table (this part would only execute if no conflict was found)
+                // Ajouter les entrées à la table (cette partie s'exécute uniquement si aucun conflit n'est détecté)
                 foreach (var terminal in firstSet.Where(t => t != Symbol.EPSILON))
                 {
                     if (_table[head].ContainsKey(terminal))
@@ -60,6 +60,7 @@ namespace SemanticAnalysis.Parsing
                     _table[head][terminal] = production;
                 }
 
+                // Gérer les productions qui dérivent epsilon
                 if (firstSet.Contains(Symbol.EPSILON))
                 {
                     foreach (var terminal in scheme.Follow[head])
@@ -76,46 +77,47 @@ namespace SemanticAnalysis.Parsing
 
         public Production? GetProduction(Symbol nonterminal, Symbol terminal)
         {
-            // First verify symbol types before checking table contents
-            
-            // 1. Verify that the "nonterminal" parameter is actually a non-terminal
+            // Vérifier d'abord les types de symboles avant de consulter le contenu de la table
+
+            // 1. Vérifier que le paramètre "nonterminal" est bien un non-terminal
             if (nonterminal.Type == SymbolType.Terminal)
             {
                 throw new WhenNonterminalIsTerminalException(nonterminal);
             }
 
-            // 2. Verify that the "nonterminal" parameter is not a special symbol
+            // 2. Vérifier que le paramètre "nonterminal" n'est pas un symbole spécial
             if (nonterminal.Type == SymbolType.Special)
             {
                 throw new WhenNonterminalIsSpecialException(nonterminal);
             }
 
-            // 3. Verify that the "terminal" parameter is actually a terminal or 'end'
+            // 3. Vérifier que le paramètre "terminal" est bien un terminal ou 'end'
             if (terminal.Type == SymbolType.Nonterminal)
             {
                 throw new WhenTerminalIsNonterminalException(terminal);
             }
 
-            // 4. Verify that if it's a special symbol, it must be 'end'
+            // 4. Vérifier que s'il s'agit d'un symbole spécial, il doit être 'end'
             if (terminal.Type == SymbolType.Special && terminal != Symbol.END)
             {
                 throw new WhenTerminalIsSpecialOtherThanEndException(terminal);
             }
 
-            // After type validation, check table contents
+            // Après la validation des types, vérifier le contenu de la table
 
-            // 5. Verify that the nonterminal is in the table
+            // 5. Vérifier que le non-terminal est présent dans la table
             if (!_table.ContainsKey(nonterminal))
             {
                 throw new WhenNonterminalIsNotInTableException(nonterminal);
             }
 
+            // Si le terminal n'est pas 'end', vérifier s'il existe dans une des lignes
             if (terminal != Symbol.END)
             {
                 bool terminalFouded = false;
                 foreach (var row in _table.Values)
                 {
-                    if(row.ContainsKey(terminal))
+                    if (row.ContainsKey(terminal))
                     {
                         terminalFouded = true;
                         break;
@@ -128,9 +130,9 @@ namespace SemanticAnalysis.Parsing
                 }
             }
 
-            // 6. Verify that the terminal is in the table for this nonterminal
+            // 6. Vérifier que le terminal est présent dans la table pour ce non-terminal
             if (!_table[nonterminal].ContainsKey(terminal))
-            {                
+            {
                 return null;
             }
 
